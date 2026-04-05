@@ -4,65 +4,116 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
-// регистрация
+
+
+// Token verification middleware
+const authMiddleware = (req, res, next) => {
+    const token = req.cookies.token;
+
+    if (!token) {
+        return res.status(401).json({ message: "No token provided" });
+    }
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.userId = decoded.id;
+        next();
+    } catch (err) {
+        if (err.name === "TokenExpiredError") {
+            return res.status(401).json({ message: "Token expired" });
+        }
+        return res.status(401).json({ message: "Invalid token" });
+    }
+};
+
+
+// Registration
 router.post("/register", async (req, res) => {
     try {
         const { name, email, password } = req.body;
+
         const exist = await User.findOne({ email });
-        if (exist) return res.status(400).json({ message: "Пользователь уже существует" });
+        if (exist) {
+            return res.status(400).json({ message: "User already exists" });
+        }
 
         const hashed = await bcrypt.hash(password, 10);
-        const user = new User({ name, email, password: hashed });
+
+        const user = new User({
+            name,
+            email,
+            password: hashed
+        });
+
         await user.save();
 
-        res.status(200).json({ message: "Регистрация успешна!" });
+        res.json({ message: "Registration successful!" });
+
     } catch (err) {
         console.error(err);
-        res.status(500).json({ message: "Ошибка сервера" });
+        res.status(500).json({ message: "Server error" });
     }
 });
 
-// вход
+
+// Login
 router.post("/login", async (req, res) => {
     try {
         const { email, password } = req.body;
         const user = await User.findOne({ email });
-        if (!user) return res.status(400).json({ message: "Неверный email или пароль" });
+        if (!user) {
+            return res.status(400).json({ message: "Invalid email or password" });
+        }
 
         const match = await bcrypt.compare(password, user.password);
-        if (!match) return res.status(400).json({ message: "Неверный email или пароль" });
+        if (!match) {
+            return res.status(400).json({ message: "Invalid email or password" });
+        }
 
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
+        const token = jwt.sign(
+            { id: user._id },
+            process.env.JWT_SECRET,
+            { expiresIn: "1h" }
+        );
 
-        res.cookie("token", token, { httpOnly: true });
-        res.status(200).json({ message: "Вход успешен!" });
+        res.cookie("token", token, {
+            httpOnly: true,
+            sameSite: "lax",
+            secure: false // set true if using HTTPS
+        });
+
+        res.json({ message: "Login successful!" });
+
     } catch (err) {
         console.error(err);
-        res.status(500).json({ message: "Ошибка сервера" });
+        res.status(500).json({ message: "Server error" });
     }
 });
 
-// проверка токена
-router.get("/me", async (req, res) => {
-    try {
-        const token = req.cookies.token;
-        if (!token) return res.status(401).json({ message: "Не авторизован" });
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findById(decoded.id).select("-password");
-        if (!user) return res.status(404).json({ message: "Пользователь не найден" });
+// Get current user
+router.get("/me", authMiddleware, async (req, res) => {
+    try {
+        const user = await User.findById(req.userId).select("-password");
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
 
         res.json(user);
+
     } catch (err) {
         console.error(err);
-        res.status(401).json({ message: "Не авторизован" });
+        res.status(500).json({ message: "Server error" });
     }
 });
 
-// выход
+
+// Logout
 router.post("/logout", (req, res) => {
     res.clearCookie("token");
-    res.status(200).json({ message: "Вы вышли" });
+    res.json({ message: "Logged out" });
 });
+
 
 module.exports = router;
