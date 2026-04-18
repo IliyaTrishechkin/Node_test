@@ -57,6 +57,9 @@ async function logout() {
         const emailEl = document.getElementById("user-email");
         if (nameEl) nameEl.innerText = user.name;
         if (emailEl) emailEl.innerText = user.email;
+        
+        // ✅ Ініціалізуємо чат ТІЛЬКИ після того, як користувач залогінився
+        initChat();
     }
 
     // ===== Login page (redirect if already logged in) =====
@@ -107,7 +110,7 @@ if (formRegister) {
     });
 }
 
-// Login — исправлено: используем id="email-login" и "password-login"
+// Login
 const formLogin = document.getElementById("form-login");
 if (formLogin) {
     formLogin.addEventListener("submit", async (e) => {
@@ -141,4 +144,49 @@ if (logoutBtn) {
     logoutBtn.addEventListener("click", async () => {
         await logout();
     });
+}
+
+// ===== Функція відправки повідомлення =====
+async function sendMessage(text) {
+    const developerPrefix = "Проаналізуй настрій за повідомленням: ";
+    const fullMessage = developerPrefix + text;
+
+    const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: fullMessage })
+    });
+
+    const data = await res.json();
+    return data.reply;
+}
+
+// ===== Чат з DeepSeek =====
+function initChat() {
+    const questionInput = document.getElementById('question');
+    const chatArea = document.getElementById('chat');
+    const askBtn = document.getElementById('ask-btn');
+
+    if (!questionInput || !chatArea || !askBtn) {
+        console.log('Елементи чату не знайдені');
+        return;
+    }
+
+    askBtn.addEventListener('click', async () => {
+        const text = questionInput.value.trim();
+        if (!text) return;
+        
+        chatArea.value = '🤔 Запит до DeepSeek...';
+        
+        const reply = await sendMessage(text);
+        
+        chatArea.value = reply;
+        questionInput.value = '';
+    });
+
+    questionInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') askBtn.click();
+    });
+    
+    console.log('Чат ініціалізовано!');
 }
