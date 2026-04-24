@@ -1,9 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const OpenAI = require("openai");
-const User = require("../models/Advice");
-const User = require("../models/Article");
-const User = require("../models/Question");
+const Advice = require("../models/Advice");
+const Article = require("../models/Article");
+const Question = require("../models/Question");
+
 
 const client = new OpenAI({
   apiKey: process.env.DEEPSEEK_API_KEY,

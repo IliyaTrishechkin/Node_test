@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add question</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #4e73df, #1cc88a);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            background: white;
+            padding: 30px 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            width: 500px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4e73df;
+        }
+
+        .help {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 20px;
+            background: #f8f9fc;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            transition: 0.2s;
+        }
+
+        input:focus {
+            border-color: #4e73df;
+            outline: none;
+        }
+
+        button {
+            margin-top: 20px;
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            background: #4e73df;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: #2e59d9;
+        }
+
+        a {
+            display: block;
+            text-decoration: none;
+            margin: 10px 0;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: bold;
+            transition: 0.3s;
+            color: white;
+            background: #4e73df;
+        }
+
+        a:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .back-btn {
+            display: block;
+            text-decoration: none;
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: bold;
+            text-align: center;
+            transition: 0.3s;
+            
+            background: #858796; /* спокойный серый */
+            color: white;
+        }
+
+        .back-btn:hover {
+            background: #6c757d;
+            transform: translateY(-2px);
+        }
+
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Додайте питання</h1>
+
+        <div class="help">
+            Довідка:<br>
+            • У питання має бути хоча б 1 відповідь<br>
+            • Додавати пункт "своя відповідь" не потрібно — він створюється автоматично
+        </div>
+
+        <form action="" id="questionForm">
+            <label>Саме питання</label>
+            <input type="text" name="question" required>
+
+            <label>Варіант відповіді 1</label>
+            <input type="text" name="answer1" required>
+
+            <label>Варіант відповіді 2</label>
+            <input type="text" name="answer2">
+
+            <label>Варіант відповіді 3</label>
+            <input type="text" name="answer3">
+
+            <button type="submit">Додати питання</button>
+        </form>
+
+        <a href="root_menu.html" align="center" class="back-btn">На головну</a>
+    </div>
+</body>
+<script src="script.js"></script>
+</html>

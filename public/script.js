@@ -21,7 +21,7 @@ async function api(url, options = {}) {
     }
 }
 
-// Check authentication
+
 async function checkAuth() {
     const res = await api("/api/auth/me");
     if (!res.ok) return null;
@@ -37,10 +37,20 @@ async function logout() {
 // Page logic
 (async () => {
     const path = window.location.pathname;
+    const user = await checkAuth();
+
+    // Адмінські сторінки (захист)
+    const adminPages = ["add_question.html", "add_article.html", "add_advice.html", "root_menu.html"];
+    const isAdminPage = adminPages.some(p => path.includes(p));
+
+    // Якщо сторінка для адміна, але користувач не адмін — перенаправити
+    if (isAdminPage && (!user || user.role !== "admin")) {
+        window.location.href = "/user.html";
+        return;
+    }
 
     // ===== Home page =====
     if (path === "/" || path.endsWith("index.html")) {
-        const user = await checkAuth();
         if (user) {
             window.location.href = "/user.html";
         }
@@ -48,7 +58,6 @@ async function logout() {
 
     // ===== User page =====
     if (path.endsWith("user.html")) {
-        const user = await checkAuth();
         if (!user) {
             window.location.href = "/login.html";
             return;
@@ -58,24 +67,17 @@ async function logout() {
         if (nameEl) nameEl.innerText = user.name;
         if (emailEl) emailEl.innerText = user.email;
         
-        // ✅ Ініціалізуємо чат ТІЛЬКИ після того, як користувач залогінився
         initChat();
     }
 
     // ===== Login page (redirect if already logged in) =====
-    if (path.endsWith("login.html")) {
-        const user = await checkAuth();
-        if (user) {
-            window.location.href = "/user.html";
-        }
+    if (path.endsWith("login.html") && user) {
+        window.location.href = "/user.html";
     }
 
     // ===== Register page (redirect if already logged in) =====
-    if (path.endsWith("register.html")) {
-        const user = await checkAuth();
-        if (user) {
-            window.location.href = "/user.html";
-        }
+    if (path.endsWith("register.html") && user) {
+        window.location.href = "/user.html";
     }
 })();
 
@@ -131,7 +133,12 @@ if (formLogin) {
         });
 
         if (res.ok) {
-            window.location.href = "/user.html";
+            const meRes = await api("/api/auth/me");
+            if (meRes.ok && meRes.data.role === "admin") {
+                window.location.href = "/root_menu.html";
+            } else {
+                window.location.href = "/user.html";
+            }
         } else {
             if (msgElement) msgElement.innerText = res.data.message || "Ошибка входа";
         }
@@ -189,4 +196,51 @@ function initChat() {
     });
     
     console.log('Чат ініціалізовано!');
+}
+
+// Адмінські форми додавання (існують тільки на відповідних сторінках)
+const questionForm = document.getElementById("questionForm");
+if (questionForm) {
+    questionForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const title = questionForm.querySelector("[name='question']").value;
+        const answers = [
+            questionForm.querySelector("[name='answer1']").value,
+            questionForm.querySelector("[name='answer2']").value,
+            questionForm.querySelector("[name='answer3']").value
+        ].filter(a => a.trim());
+        const res = await api("/api/save/addQuestion", {
+            method: "POST",
+            body: JSON.stringify({ question: title, answers })
+        });
+        alert(res.data.message || "Done");
+    });
+}
+
+const adviceForm = document.getElementById("adviceForm");
+if (adviceForm) {
+    adviceForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const title = adviceForm.querySelector("[name='title']").value;
+        const text = adviceForm.querySelector("[name='advice']").value;
+        const res = await api("/api/save/addAdvice", {
+            method: "POST",
+            body: JSON.stringify({ title, text })
+        });
+        alert(res.data.message || "Done");
+    });
+}
+
+const articleForm = document.getElementById("articleForm");
+if (articleForm) {
+    articleForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const title = articleForm.querySelector("[name='title']").value;
+        const text = articleForm.querySelector("[name='article']").value;
+        const res = await api("/api/save/addArticle", {
+            method: "POST",
+            body: JSON.stringify({ title, text })
+        });
+        alert(res.data.message || "Done");
+    });
 }
