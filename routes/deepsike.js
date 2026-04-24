@@ -1,15 +1,19 @@
 const express = require("express");
 const router = express.Router();
 const OpenAI = require("openai");
-const User = require("../models/Advice");
-const User = require("../models/Article");
-const User = require("../models/Question");
+const Advice = require("../models/Advice");
+const Article = require("../models/Article");
+const Question = require("../models/Question");
 
 const client = new OpenAI({
   apiKey: process.env.DEEPSEEK_API_KEY,
   baseURL: "https://api.deepseek.com",
 });
 
+async function getRandomQuestions(){
+  const questions = await Question.aggregate([{ $sample: { size: 30 } }]);
+  return questions;
+}
 
 // Helper function: classify custom user answer into category 1,2,3
 async function classifyCustomAnswer(userText) {
@@ -44,6 +48,16 @@ async function classifyCustomAnswer(userText) {
     return 2;                                       // default to minor problems
   }
 }
+
+// Route to get random questions for the test
+router.get("/questions", async (req, res) => {
+  try{
+    const questions = await getRandomQuestions();
+    res.json({ questions });
+  }catch(err){
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 // Route to process the test answers
 router.post("/test", async (req, res) => {
