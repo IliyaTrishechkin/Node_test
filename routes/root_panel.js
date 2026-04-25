@@ -58,8 +58,12 @@ router.post("/addQuestion", authMiddleware, isAdmin, async (req, res) => {
         res.json({ message: "Question added successfully!" });
 
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
+        if (err === 11000){
+            res.status(400).json({ message: "This Question already exists" });
+        } else {
+            console.error(err);
+            res.status(500).json({ message: "Server error" });
+        }
     }
 });
 
@@ -82,8 +86,12 @@ router.post("/addArticle", authMiddleware, isAdmin, async (req, res) => {
         res.json({ message: "Article added successfully!" });
 
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
+        if (err === 11000){
+            res.status(400).json({ message: "This Article already exists" });
+        } else {
+            console.error(err);
+            res.status(500).json({ message: "Server error" });
+        }
     }
 });
 
@@ -106,8 +114,12 @@ router.post("/addAdvice", authMiddleware, isAdmin, async (req, res) => {
         res.json({ message: "Advice added successfully!" });
 
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
+        if (err === 11000){
+            res.status(400).json({ message: "This Advice already exists" });
+        } else {
+            console.error(err);
+            res.status(500).json({ message: "Server error" });
+        }
     }
 });
 
