@@ -1,10 +1,10 @@
 const express = require("express");
+const session = require("express-session");
+const passport = require("passport");
 const router = express.Router();
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
-
-
 
 // Token verification middleware
 const authMiddleware = (req, res, next) => {
@@ -89,6 +89,37 @@ router.post("/login", async (req, res) => {
         res.status(500).json({ message: "Server error" });
     }
 });
+
+// Google OAuth routes
+router.get("/google",
+    passport.authenticate("google", {
+        scope: ["profile", "email"]
+    })
+);
+
+router.get("/google/callback",
+    passport.authenticate("google", {
+        failureRedirect: "/register.html?msg=User+not+found"
+    }),
+    (req, res) => {
+
+        const token = jwt.sign(
+            { id: req.user._id },
+            process.env.JWT_SECRET,
+            { expiresIn: "1h" }
+        );
+
+        res.cookie("token", token, {
+            httpOnly: true,
+            sameSite: "lax",
+            secure: false
+        });
+
+        res.redirect("/user.html");
+    }
+);
+
+
 
 
 // Get current user

@@ -138,6 +138,14 @@ if (formLogin) {
     });
 }
 
+// google login button
+const googleBtn = document.getElementById("google-login-btn");
+if (googleBtn) {
+    googleBtn.addEventListener("click", () => {
+        window.location.href = "/api/auth/google";
+    });
+}
+
 // Logout
 const logoutBtn = document.getElementById("logout-btn");
 if (logoutBtn) {
