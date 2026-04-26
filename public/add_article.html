@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add article</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #4e73df, #1cc88a);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            background: white;
+            padding: 30px 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            width: 550px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4e73df;
+        }
+
+        .help {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 20px;
+            background: #f8f9fc;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            transition: 0.2s;
+            font-family: inherit;
+        }
+
+        textarea {
+            resize: vertical; /* тут можна змінювати висоту */
+        }
+
+        input:focus, textarea:focus {
+            border-color: #4e73df;
+            outline: none;
+        }
+
+        button {
+            margin-top: 20px;
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            background: #4e73df;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: #2e59d9;
+        }
+
+        .back-btn {
+            display: block;
+            text-decoration: none;
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: bold;
+            text-align: center;
+            transition: 0.3s;
+            background: #858796;
+            color: white;
+        }
+
+        .back-btn:hover {
+            background: #6c757d;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Додати статтю</h1>
+
+        <div class="help">
+            Стаття може містити більше тексту та детальний опис
+        </div>
+
+        <form action="" id="articleForm">
+            <label>Заголовок статті</label>
+            <input type="text" name="title" required>
+
+            <label>Текст статті</label>
+            <textarea name="article" rows="10" required></textarea>
+
+            <button type="submit">Додати статтю</button>
+        </form>
+
+        <a href="root_menu.html" class="back-btn">← На головну</a>
+    </div>
+</body>
+<script src="script.js"></script>
+</html>

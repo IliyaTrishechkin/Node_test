@@ -7,6 +7,8 @@ const cookieParser = require("cookie-parser");
 const authRoutes = require("./routes/auth");
 const chatRoutes = require("./routes/deepsike");
 const passport = require("./config/passport");
+const saveRoutes = require("./routes/root_panel");
+const forgotRoutes = require("./routes/reset_password");
 
 const app = express();
 
@@ -25,7 +27,9 @@ app.use(express.static("public"));
 
 // routes
 app.use("/api/chat", chatRoutes);
+app.use("/api/save", saveRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/forgot", forgotRoutes);
 
 app.get("/login", (req, res) => { 
     res.redirect("/register.html"); 
