@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const OpenAI = require("openai");
 
+const logger = require("../logger");
+
 const Advice = require("../models/Advice");
 const Article = require("../models/Article");
 const Question = require("../models/Question");
@@ -20,6 +22,8 @@ async function getRandomQuestions(){
 // Helper function: classify custom user answer into category 1,2,3
 async function classifyCustomAnswer(userText) {
   try {
+    logger.info("AI classification request", { textLength: userText.length });
+
     const completion = await client.chat.completions.create({
       model: "deepseek-chat",
       messages: [
@@ -43,10 +47,16 @@ async function classifyCustomAnswer(userText) {
 
     const reply = completion.choices[0].message.content.trim();
     const category = parseInt(reply, 10);
+
+    logger.info("AI classification result", { reply, category });
+
     if ([1, 2, 3].includes(category)) return category;
     return 2;                                       // fallback – minor problems
   } catch (err) {
-    console.error("DeepSeek classification error:", err);
+    logger.error("AI classification error", {
+      message: err.message,
+      stack: err.stack
+    });
     return 2;                                       // default to minor problems
   }
 }
@@ -54,9 +64,16 @@ async function classifyCustomAnswer(userText) {
 // Route to get random questions for the test
 router.get("/questions", async (req, res) => {
   try{
+    logger.info("Fetching questions");
     const questions = await getRandomQuestions();
+
+    logger.info("Questions sent", { count: questions.length });
     res.json({ questions });
   }catch(err){
+    logger.error("Questions error", {
+      message: err.message,
+      stack: err.stack
+    });
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -65,8 +82,12 @@ router.get("/questions", async (req, res) => {
 router.post("/test", async (req, res) => {
   try {
     const { answers } = req.body;                   // expected array of { answer: number, customText?: string }
+    logger.info("Test started", {
+      answersCount: Array.isArray(answers) ? answers.length : 0
+    });
 
     if (!Array.isArray(answers) || answers.length === 0) {
+      logger.warn("Invalid test format");
       return res.status(400).json({ error: "Invalid format: expected answers array" });
     }
 
@@ -109,6 +130,17 @@ router.post("/test", async (req, res) => {
       percent_bad = Math.round((bad / sum) * 100);
     }
 
+
+    logger.info("Test result calculated", {
+      good,
+      minor,
+      bad,
+      percentages: {
+        good: percent_good,
+        minor: percent_minor,
+        bad: percent_bad
+      }
+    });
     
     // Prepare percentages and corresponding state names
     const items = [
@@ -202,7 +234,10 @@ router.post("/test", async (req, res) => {
       recommendation,
     });
     } catch (err) {
-      console.error("Test processing error:", err);
+      logger.error("Test processing error", {
+        message: err.message,
+        stack: err.stack
+      });
       res.status(500).json({ error: "Internal server error" });
     }
 });
@@ -212,7 +247,10 @@ router.post("/test", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const message = req.body.message;
-    console.log("Отримано:", message);
+    logger.info("Chat request", {
+      length: message?.length,
+      preview: message?.slice(0, 50)
+    });
 
     let userText = message
       .replace("Проаналізуй настрій за повідомленням: ", "")
@@ -245,10 +283,16 @@ router.post("/", async (req, res) => {
 
     const reply = completion.choices[0].message.content;
 
+    logger.info("Chat response generated", {
+      length: reply?.length
+    });
     res.json({ reply });
 
   } catch (err) {
-    console.error("DeepSeek error:", err);
+    logger.error("Chat AI error", {
+      message: err.message,
+      stack: err.stack
+    });
     res.status(500).json({ reply: "Помилка ШІ 😢" });
   }
 });

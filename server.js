@@ -4,13 +4,29 @@ const session = require("express-session");
 const mongoose = require("mongoose");
 const cookieParser = require("cookie-parser");
 
+const logger = require("./logger");
+
+const app = express();
+
+app.use((req, res, next) => {
+    res.on("finish", () => {
+        logger.info("Request", {
+            method: req.method,
+            url: req.url,
+            status: res.statusCode,
+            ip: req.ip
+        });
+    });
+    next();
+});
+
+
 const authRoutes = require("./routes/auth");
 const chatRoutes = require("./routes/deepsike");
 const passport = require("./config/passport");
 const saveRoutes = require("./routes/root_panel");
 const forgotRoutes = require("./routes/reset_password");
 
-const app = express();
 
 // middleware
 app.use(session({
@@ -37,11 +53,26 @@ app.get("/login", (req, res) => {
 
 // connect DB
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log("MongoDB connected"))
-    .catch(err => console.error("MongoDB error:", err));
+    .then(() => logger.info("MongoDB connected"))
+    .catch(err => logger.error("MongoDB error", {
+            message: err.message,
+            stack: err.stack
+        })
+);
 
 // start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () =>
-    console.log(`Server started on http://localhost:${PORT}`)
+    logger.info(`Server started on http://localhost:${PORT}`)
 );
+
+app.use((err, req, res, next) => {
+    logger.error("Unhandled error", {
+        url: req.url,
+        method: req.method,
+        message: err.message,
+        stack: err.stack
+    });
+
+    res.status(500).json({ message: "Internal server error" });
+});
