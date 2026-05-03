@@ -8,29 +8,8 @@ const Question = require("../models/Question");
 const logger = require("../logger");
 
 
-// ================= AUTH =================
-const authMiddleware = (req, res, next) => {
-    const token = req.cookies.token;
-
-    if (!token) {
-        logger.warn("Auth failed: no token", { ip: req.ip });
-        return res.status(401).json({ message: "No token" });
-    }
-
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-        req.userId = decoded.id;
-        req.userRole = decoded.role; 
-        next();
-    } catch (err) {
-        logger.warn("Auth failed: invalid token", {
-            message: err.message,
-            ip: req.ip
-        });
-        return res.status(401).json({ message: "Invalid token" });
-    }
-};
+const auth = require("./auth");
+const authMiddleware = auth.authMiddleware;
 
 
 // ================= ADMIN =================

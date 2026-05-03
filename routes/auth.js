@@ -32,6 +32,7 @@ const authMiddleware = (req, res, next) => {
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         req.userId = decoded.id;
+        req.userRole = decoded.role;
         logger.info("authMiddleware: Auth success", { userId: decoded.id });
         next();
     } catch (err) {
@@ -72,6 +73,15 @@ router.post("/register", async (req, res) => {
             password: hashedPassword,
             code: hashedCode
         });
+
+        if (process.env.NODE_ENV === "test") {
+            logger.info("register: TEST MODE - skip email", { email });
+
+            return res.json({
+                message: "Code sent to email",
+                testCode: code // только для тестов
+            });
+        }
 
         await transporter.sendMail({
             from: `"TeenSupport" <${process.env.EMAIL_USER}>`,
@@ -168,7 +178,7 @@ router.post("/login", async (req, res) => {
         res.cookie("token", token, {
             httpOnly: true,
             sameSite: "lax",
-            secure: true // set true if using HTTPS
+            secure: process.env.NODE_ENV === "production" // set true if using HTTPS
         });
 
         logger.info("Login success", { userId: user._id, email });
@@ -251,3 +261,4 @@ router.post("/logout", (req, res) => {
 
 
 module.exports = router;
+module.exports.authMiddleware = authMiddleware;

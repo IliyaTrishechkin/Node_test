@@ -46,12 +46,15 @@ router.post("/forgot-password", async (req, res) => {
             code: hashedCode
         });
 
-        await transporter.sendMail({
-            from: `"TeenSupport" <${process.env.EMAIL_USER}>`,
-            to: email,
-            subject: "Password reset",
-            text: `Your password reset code: ${code}`
-        });
+        if (process.env.NODE_ENV === "test") {
+            logger.info("Forgot-password: TEST MODE - skip email");
+        } else {
+            await transporter.sendMail({
+                to: email,
+                subject: "Password reset",
+                text: `Your code: ${code}`,
+            });
+        }
 
         logger.info("Forgot-password: reset email sent", {
             email,

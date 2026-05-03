@@ -9,10 +9,15 @@ const Article = require("../models/Article");
 const Question = require("../models/Question");
 
 
-const client = new OpenAI({
-  apiKey: process.env.DEEPSEEK_API_KEY,
-  baseURL: "https://api.deepseek.com",
-});
+let client = null;
+
+if (process.env.NODE_ENV !== "test") {
+  client = new OpenAI({
+    apiKey: process.env.DEEPSEEK_API_KEY,
+    baseURL: "https://api.deepseek.com",
+  });
+}
+
 
 async function getRandomQuestions(){
   const questions = await Question.aggregate([{ $sample: { size: 30 } }]);
@@ -22,6 +27,11 @@ async function getRandomQuestions(){
 // Helper function: classify custom user answer into category 1,2,3
 async function classifyCustomAnswer(userText) {
   try {
+    if (!client) {
+      logger.warn("AI disabled (test mode), fallback classification");
+      return 2;
+    }
+
     logger.info("AI classification request", { textLength: userText.length });
 
     const completion = await client.chat.completions.create({
