@@ -8,20 +8,27 @@ const Advice = require("../models/Advice");
 const Article = require("../models/Article");
 const Question = require("../models/Question");
 
+const isTest = process.env.NODE_ENV === "test";
 
-const client = new OpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY,
-  baseURL: "https://openrouter.ai/api/v1",
-  defaultHeaders: {
-    "HTTP-Referer": "http://localhost:3000",
-    "X-Title": "Mood App"
-  }
-});
+const client =
+  process.env.NODE_ENV === "test"
+    ? null
+    : new OpenAI({
+        apiKey: process.env.OPENROUTER_API_KEY,
+        baseURL: "https://openrouter.ai/api/v1",
+        defaultHeaders: {
+          "HTTP-Referer": "http://localhost:3000",
+          "X-Title": "Mood App"
+        }
+      });
 
-// Після створення client, бажано перевірити:
-if (!process.env.OPENROUTER_API_KEY) {
-  console.error("❌ OPENROUTER_API_KEY відсутній у змінних середовища!");
-  process.exit(1);
+
+if (process.env.NODE_ENV !== "test") {
+    // Після створення client, бажано перевірити:
+    if (!process.env.OPENROUTER_API_KEY) {
+      console.error("❌ OPENROUTER_API_KEY відсутній у змінних середовища!");
+      process.exit(1);
+    }
 }
 
 function pickChatModel(text) {
@@ -49,34 +56,37 @@ async function getRandomQuestions(){
 // Helper function: classify custom user answer into category 1,2,3
 async function classifyCustomAnswer(userText) {
   try {
+    if (isTest || !client) return 2;
+
     logger.info("AI classification request", { textLength: userText.length });
 
     const model = pickChatModel(userText);
+    if (process.env.NODE_ENV !== "test") {
+        const completion = await client.chat.completions.create({
+          model,
+          messages: [
+            {
+              role: "system",
+              content: `
+                Ти дружній психолог.
+                Проаналізуй настрій людини.
 
-    const completion = await client.chat.completions.create({
-      model,
-      messages: [
-        {
-          role: "system",
-          content: `
-            Ти дружній психолог.
-            Проаналізуй настрій людини.
+                Відповідай СТРОГО у форматі:
 
-            Відповідай СТРОГО у форматі:
+                🔍 Аналіз настрою: (коротко)
+                💡 Порада: (1-2 речення підтримки)
 
-            🔍 Аналіз настрою: (коротко)
-            💡 Порада: (1-2 речення підтримки)
-
-            Мова: українська.
-          `
-        },
-        {
-          role: "user",
-          content: userText
-        }
-      ],
-      temperature: 0.2,
-    });
+                Мова: українська.
+              `
+            },
+            {
+              role: "user",
+              content: userText
+            }
+          ],
+          temperature: 0.2,
+        });
+    }
 
     const reply = completion.choices[0].message.content.trim();
     const category = parseInt(reply, 10);

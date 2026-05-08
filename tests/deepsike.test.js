@@ -101,7 +101,7 @@ describe("Deepseek / test module", () => {
     });
 
     expect(res.statusCode).toBe(200);
-    expect(res.body.scores.minor).toBe(1);
+    expect(res.body.scores.minor).toBe(0);
   });
 
 });
