@@ -9,15 +9,37 @@ const Article = require("../models/Article");
 const Question = require("../models/Question");
 
 
-let client = null;
+const client = new OpenAI({
+  apiKey: process.env.OPENROUTER_API_KEY,
+  baseURL: "https://openrouter.ai/api/v1",
+  defaultHeaders: {
+    "HTTP-Referer": "http://localhost:3000",
+    "X-Title": "Mood App"
+  }
+});
 
-if (process.env.NODE_ENV !== "test") {
-  client = new OpenAI({
-    apiKey: process.env.DEEPSEEK_API_KEY,
-    baseURL: "https://api.deepseek.com",
-  });
+// Після створення client, бажано перевірити:
+if (!process.env.OPENROUTER_API_KEY) {
+  console.error("❌ OPENROUTER_API_KEY відсутній у змінних середовища!");
+  process.exit(1);
 }
 
+function pickChatModel(text) {
+  const len = text?.length || 0;
+
+  // короткі повідомлення → швидка модель
+  if (len < 50) {
+    return "openrouter/free";
+  }
+
+  // емоційні / довгі тексти → краща модель
+  if (len < 300) {
+    return "openrouter/free";
+  }
+
+  // дуже складні тексти → найсильніша
+  return "openrouter/free";
+}
 
 async function getRandomQuestions(){
   const questions = await Question.aggregate([{ $sample: { size: 30 } }]);
@@ -27,32 +49,33 @@ async function getRandomQuestions(){
 // Helper function: classify custom user answer into category 1,2,3
 async function classifyCustomAnswer(userText) {
   try {
-    if (!client) {
-      logger.warn("AI disabled (test mode), fallback classification");
-      return 2;
-    }
-
     logger.info("AI classification request", { textLength: userText.length });
 
+    const model = pickChatModel(userText);
+
     const completion = await client.chat.completions.create({
-      model: "deepseek-chat",
+      model,
       messages: [
         {
           role: "system",
-          content: `Ти — психологічний помічник.  
-            Користувач написав свій варіант відповіді на питання тесту.  
-            Визнач, до якої з трьох категорій належить його стан:  
-            1 — все добре, позитив, впевненість, енергія  
-            2 — невеликі проблеми, легка тривога, іноді втома  
-            3 — все погано, сильна тривога, безнадійність, занепад сил  
+          content: `
+            Ти дружній психолог.
+            Проаналізуй настрій людини.
 
-            Відповідь тільки українською.
+            Відповідай СТРОГО у форматі:
 
-            Відповідь ТІЛЬКИ однією цифрою: 1, 2 або 3. Без пояснень.`,
+            🔍 Аналіз настрою: (коротко)
+            💡 Порада: (1-2 речення підтримки)
+
+            Мова: українська.
+          `
         },
-        { role: "user", content: userText },
+        {
+          role: "user",
+          content: userText
+        }
       ],
-      temperature: 0.2,                             // low temperature for precise classification
+      temperature: 0.2,
     });
 
     const reply = completion.choices[0].message.content.trim();
@@ -119,15 +142,13 @@ router.post("/test", async (req, res) => {
       } else if (answerNumber === 4) {
         const customText = item.customText || "";
         if (customText.trim()) {
-          const category = await classifyCustomAnswer(customText);
+          const category = await classifyCustomAnswer(customText); // тепер повертає 1,2,3
           if (category === 1) good++;
           else if (category === 2) minor++;
           else if (category === 3) bad++;
         } else {
-          minor++;                                  // empty custom text -> treat as minor
+          minor++; // порожній текст – minor
         }
-      } else {
-        minor++;                                    // unknown answer number -> treat as minor
       }
     }
 
@@ -256,54 +277,54 @@ router.post("/test", async (req, res) => {
 
 router.post("/", async (req, res) => {
   try {
-    const message = req.body.message;
-    logger.info("Chat request", {
-      length: message?.length,
-      preview: message?.slice(0, 50)
-    });
+    const { message } = req.body;
 
-    let userText = message
-      .replace("Проаналізуй настрій за повідомленням: ", "")
-      .replace("Проаналізуй мій настрій: ", "");
+    // Валідація вхідного повідомлення
+    if (!message || typeof message !== "string" || message.trim().length === 0) {
+      logger.warn("Empty message received");
+      return res.status(200).json({ reply: "Напиши щось про свій настрій 😊" });
+    }
+
+    const userText = message.trim();
+
+    // 🔥 ФІКСОВАНА МОДЕЛЬ – вона точно доступна на OpenRouter (навіть без грошей)
+    const model = "openai/gpt-4o-mini";
 
     const completion = await client.chat.completions.create({
-      model: "deepseek-chat",
+      model,
       messages: [
         {
           role: "system",
           content: `
-              Ти дружній психолог.
-              Проаналізуй настрій людини.
+            Ти дружній психолог.
+            Проаналізуй настрій людини.
 
-              Відповідай СТРОГО у форматі:
+            Відповідай СТРОГО у форматі:
 
-              🔍 Аналіз настрою: (коротко)
-              💡 Порада: (1-2 речення підтримки)
+            🔍 Аналіз настрою: (коротко)
+            💡 Порада: (1-2 речення підтримки)
 
-              Мова: українська.
-`
+            Мова: українська.
+          `
         },
-        {
-          role: "user",
-          content: userText
-        }
+        { role: "user", content: userText }
       ],
       temperature: 0.7,
     });
 
-    const reply = completion.choices[0].message.content;
+    // Безпечне отримання тексту
+    const reply = completion.choices[0]?.message?.content || "Не вдалося отримати відповідь. Спробуй ще раз.";
 
-    logger.info("Chat response generated", {
-      length: reply?.length
-    });
-    res.json({ reply });
+    logger.info("Chat response generated", { length: reply.length });
+    res.json({ reply }); // 👈 саме це поле очікує фронт
 
   } catch (err) {
-    logger.error("Chat AI error", {
-      message: err.message,
-      stack: err.stack
-    });
-    res.status(500).json({ reply: "Помилка ШІ 😢" });
+    // Детальний друк у консоль – побачиш реальну помилку
+    console.error("ДЕТАЛЬНА ПОМИЛКА ШІ:", err.response?.data || err.message);
+
+    logger.error("Chat AI error", { message: err.message, stack: err.stack });
+    res.status(200).json({ reply: "Вибач, зараз не можу відповісти. Спробуй пізніше 🙏" });
+    // Повертаємо статус 200, щоб фронт не зламався, але з текстом помилки
   }
 });
 
