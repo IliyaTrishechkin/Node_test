@@ -204,7 +204,8 @@ router.get("/google",
 
 router.get("/google/callback",
     passport.authenticate("google", {
-        failureRedirect: "/register.html?msg=User+not+found"
+        failureRedirect: "/register.html?msg=User+not+found",
+        session: false
     }),
     (req, res) => {
 

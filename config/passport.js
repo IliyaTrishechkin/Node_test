@@ -8,7 +8,7 @@ if (process.env.NODE_ENV !== "test") {
     passport.use(new GoogleStrategy({
         clientID: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        callbackURL: "/api/auth/google/callback"
+        callbackURL: "https://super-umbrella-r4r5g7q9gq4635jjg-3000.app.github.dev/api/auth/google/callback"
     }, async (accessToken, refreshToken, profile, done) => {
         try {
             const email = profile.emails?.[0]?.value;

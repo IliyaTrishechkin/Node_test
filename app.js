@@ -12,6 +12,8 @@ const forgotRoutes = require("./routes/reset_password");
 
 const app = express();
 
+
+app.set("trust proxy", true);
 // логирование
 app.use((req, res, next) => {
     res.on("finish", () => {
@@ -26,16 +28,13 @@ app.use((req, res, next) => {
 });
 
 // middleware
-app.use(session({
-    secret: "secret_key",
-    resave: false,
-    saveUninitialized: false
-}));
+app.use(cookieParser());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.use(passport.initialize());
-app.use(passport.session());
-app.use(express.json());
-app.use(cookieParser());
+// app.use(passport.session()); // КОМЕНТУЄМО - використовуємо JWT
+
 app.use(express.static("public"));
 
 // routes
